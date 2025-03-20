@@ -1,21 +1,56 @@
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Base URL for the API
 
+export const addColumn = async (boardId, columns, setColumns) => {
+  try {
+    const token = localStorage.getItem('token'); // Get the token from localStorage
+    const response = await fetch(`${API_BASE_URL}/api/boards/${boardId}/columns`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // Include the token in the headers
+      },
+      body: JSON.stringify({ title: "", order: columns.length })
+    });
 
-export const addColumn = (columns, setColumns) => { // Add a new column
-  setColumns([
-    ...columns,
-    { id: Date.now(), title: "", isEditing: true, cards: [], newCardText: "", isAddingCard: false },
-  ]);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to create column: ${errorText}`);
+      throw new Error(`Failed to create column: ${errorText}`);
+    }
+
+    const newColumn = await response.json();
+    setColumns([...columns, { ...newColumn, isEditing: true, cards: [], newCardText: "", isAddingCard: false }]);
+  } catch (error) {
+    console.error('Failed to create column:', error);
+  }
 };
 
-export const renameColumn = (columns, setColumns, columnId, newTitle) => { // Rename a column
-  setColumns(
-    columns.map((col) =>
-      col.id === columnId ? { ...col, title: newTitle } : col
-    )
-  );
+export const renameColumn = async (boardId, columns, setColumns, columnId, newTitle) => {
+  try {
+    const token = localStorage.getItem('token'); // Get the token from localStorage
+    const response = await fetch(`${API_BASE_URL}/api/boards/${boardId}/columns/${columnId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // Include the token in the headers
+      },
+      body: JSON.stringify({ title: newTitle })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to rename column: ${errorText}`);
+      throw new Error(`Failed to rename column: ${errorText}`);
+    }
+
+    const updatedColumn = await response.json();
+    setColumns(columns.map((col) => (col.id === columnId ? { ...col, title: updatedColumn.title } : col)));
+  } catch (error) {
+    console.error('Failed to rename column:', error);
+  }
 };
 
-export const finalizeColumnTitle = (columns, setColumns, columnId) => { // Finalize column title
+export const finalizeColumnTitle = (columns, setColumns, columnId) => {
   setColumns(
     columns.map((col) =>
       col.id === columnId && col.title.trim()
@@ -25,9 +60,45 @@ export const finalizeColumnTitle = (columns, setColumns, columnId) => { // Final
   );
 };
 
-export const handleColumnDragStart = (event, columnId, setDraggingColumn) => { // Handle column drag start
+export const deleteColumn = async (boardId, columns, setColumns, columnId) => {
+  try {
+    const token = localStorage.getItem('token'); // Get the token from localStorage
+    const response = await fetch(`${API_BASE_URL}/api/boards/${boardId}/columns/${columnId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}` // Include the token in the headers
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to delete column: ${errorText}`);
+      throw new Error(`Failed to delete column: ${errorText}`);
+    }
+
+    setColumns(columns.filter((col) => col.id !== columnId).map((col, index) => ({ ...col, order: index })));
+  } catch (error) {
+    console.error('Failed to delete column:', error);
+  }
+};
+
+export const handleColumnDragStart = (event, columnId, setDraggingColumn) => {
   setDraggingColumn(columnId);
   event.dataTransfer.effectAllowed = "move";
+};
+
+export const handleDrop = (event, targetColumnId, draggingColumn, columns, setColumns) => {
+  event.preventDefault();
+  if (draggingColumn && draggingColumn !== targetColumnId) {
+    const updatedColumns = [...columns];
+    const draggedColumnIndex = updatedColumns.findIndex((col) => col.id === draggingColumn);
+    const targetColumnIndex = updatedColumns.findIndex((col) => col.id === targetColumnId);
+
+    const [draggedColumn] = updatedColumns.splice(draggedColumnIndex, 1);
+    updatedColumns.splice(targetColumnIndex, 0, draggedColumn);
+
+    setColumns(updatedColumns.map((col, index) => ({ ...col, order: index })));
+  }
 };
 
 export const addCard = (columns, setColumns, columnId) => {
