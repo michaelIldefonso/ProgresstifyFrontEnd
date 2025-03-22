@@ -10,7 +10,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import axios from "axios";
-import { addColumn, renameColumn, finalizeColumnTitle, handleColumnDragStart, addCard, removeCard, handleCardInputChange, handleCardInputKeyPress, handleCardDragStart, handleDrop, handleTrashDrop, handleCheckboxChange } from "./Components/Functions/cardColumnFunctions";
+// import { addColumn, renameColumn, finalizeColumnTitle, handleColumnDragStart, addCard, removeCard, handleCardInputChange, handleCardInputKeyPress, handleCardDragStart, handleDrop, handleTrashDrop, handleCheckboxChange } from "./Components/Functions/cardColumnFunctions";
 import { createCustomTheme } from "./Components/Functions/themeFunctions";
 import { handleMenu, handleClose, toggleDrawer } from "./Components/Functions/eventHandlerFunctions";
 import { navigateHome, handleLogout } from "./Components/Functions/navigationFunctions";
@@ -86,6 +86,12 @@ const Workspace = () => {
 
   const toggleDarkMode = () => { // Toggle dark mode
     setDarkMode(!darkMode);
+  };
+  const showAddColumnPopup = (columns, setColumns) => { // Add a new column
+    setColumns([
+      ...columns,
+      { id: Date.now(), title: "", isEditing: true, cards: [], newCardText: "", isAddingCard: false },
+    ]);
   };
 
   return (
@@ -226,7 +232,7 @@ const Workspace = () => {
             }}
           >
             
-            <Button variant="contained" startIcon={<Add />} onClick={() => addColumn(columns, setColumns)} sx={{ borderRadius: "24px" }}>
+            <Button variant="contained" startIcon={<Add />} onClick={() => showAddColumnPopup (columns, setColumns)} sx={{ borderRadius: "24px" }}>
               Add Column
             </Button>
             <Grid container spacing={2} sx={{ marginTop: 2 }}>
